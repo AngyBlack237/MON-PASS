@@ -1,0 +1,10 @@
+"use client";
+import {useEffect,useState} from "react";
+import {supabase} from "../../../lib/supabase";
+export default function PartnerPayouts(){
+ const[d,setD]=useState(null),[amount,setAmount]=useState(""),[provider,setProvider]=useState("mtn_momo"),[phone,setPhone]=useState(""),[msg,setMsg]=useState("");
+ async function load(){const {data,error}=await supabase.rpc("get_partner_dashboard");if(error)setMsg(error.message);else{setD(data);setMsg("");}}
+ useEffect(()=>{load()},[]);
+ async function submit(e){e.preventDefault();setMsg("Enregistrement...");const {data,error}=await supabase.rpc("request_partner_payout",{p_amount_fcfa:Number(amount),p_provider:provider,p_phone:phone});if(error)setMsg(error.message);else{setMsg("Demande enregistrée : "+data);setAmount("");await load();}}
+ return <main><header><a className="brand" href="/">MON <b>PASS</b></a><a className="account" href="/partenaire">← Espace partenaire</a></header><section className="formWrap"><span className="pill">REVENUS PARTENAIRE</span><h1>Retrait Mobile Money</h1><p className="muted">Disponible : <b>{d?.available_fcfa??0} FCFA</b>. Ce solde correspond à votre part après la commission MON PASS.</p><form className="matchForm" onSubmit={submit}><label>Montant à retirer<input type="number" min="1" max={d?.available_fcfa||undefined} value={amount} onChange={e=>setAmount(e.target.value)} required/></label><label>Réseau<select value={provider} onChange={e=>setProvider(e.target.value)}><option value="mtn_momo">MTN MoMo</option><option value="orange_money">Orange Money</option></select></label><label>Numéro bénéficiaire<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+237 6..." required/></label><button className="publish">Demander le retrait</button>{msg&&<p className="authMsg">{msg}</p>}</form><div className="bankNotice"><b>Sécurité</b><p>La demande réserve le montant disponible. Le transfert Mobile Money réel sera activé seulement après connexion d'un prestataire de paiement.</p></div></section></main>
+}
