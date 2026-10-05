@@ -8,3 +8,5 @@
 .authBox{max-width:620px;margin:60px auto}.authBox h1{font-size:46px;margin:18px 0 8px}.authBox>p{color:#91a59c}.authTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:25px}.authTabs .active{background:#59df96;color:#06100c}.authMsg{padding:12px;border-radius:12px;background:#13271e;color:#bdebd1}.matchForm .publish{background:#59df96;color:#06100c;font-weight:800}
 
 .pendingBox{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:18px;background:#312b16;border:1px solid #6c5e27;border-radius:16px}.pendingBox>div{display:grid;gap:5px}.pendingBox small{color:#e6cf73}.pendingBox span{font-size:11px;color:#a99f78;word-break:break-all}.pendingBox button{border-color:#8a7540}.ticketTypes button:disabled{opacity:.45;cursor:not-allowed}
+
+.financeGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.discountExamples{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}.discountExamples span{border:1px solid #365247;background:#13251d;padding:10px 14px;border-radius:99px;color:#59df96;font-weight:800}@media(max-width:750px){.financeGrid{grid-template-columns:1fr}}
