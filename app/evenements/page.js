@@ -1,0 +1,11 @@
+"use client";
+import {useEffect,useState} from "react";
+import {supabase} from "../../lib/supabase";
+import BottomNav from "../components/BottomNav";
+const labels={concert:"Concert",showcase:"Showcase",conference:"Conférence",festival:"Festival"};
+export default function Evenements(){
+ const[category,setCategory]=useState("all"),[rows,setRows]=useState([]),[msg,setMsg]=useState("Chargement des événements...");
+ useEffect(()=>{(async()=>{const {data,error}=await supabase.from("partner_offers").select("id,title,description,city,venue,starts_at,ends_at,price_fcfa,event_category,partners!inner(name,status)").eq("offer_type","event").eq("status","published").eq("partners.status","approved").order("starts_at",{ascending:true});if(error){setMsg(error.message);return;}setRows((data||[]).filter(e=>e.starts_at&&new Date(e.starts_at)>=new Date()));setMsg("");})()},[]);
+ const filtered=rows.filter(e=>category==="all"||e.event_category===category);
+ return <main><header><a className="brand" href="/">MON <b>PASS</b></a><a className="account" href="/mes-pass">Mes Pass</a></header><section className="exploreHead"><span className="pill">ÉVÉNEMENTS MON PASS</span><h1>Concerts, showcases, conférences et festivals</h1><p>Dates, heures et lieux précis des événements proposés par nos partenaires approuvés.</p></section><section className="formWrap"><label>Filtrer les événements<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">Toutes les catégories</option>{Object.entries(labels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></section>{msg&&<p className="authMsg">{msg}</p>}<section className="offerGrid">{filtered.map(e=><article className="offerCard" key={e.id}><span className="pill">{labels[e.event_category]||"Événement"}</span><h2>{e.title}</h2><p>Organisateur : {e.partners?.name}</p><p>📅 {new Date(e.starts_at).toLocaleString("fr-FR",{dateStyle:"full",timeStyle:"short",timeZone:"Africa/Douala"})}</p><p>📍 {e.venue} · {e.city}</p>{e.description&&<p>{e.description}</p>}<b>{Number(e.price_fcfa).toLocaleString("fr-FR")} FCFA</b></article>)}{!msg&&!filtered.length&&<p className="emptyCatalog">Aucun événement publié dans cette catégorie pour le moment.</p>}</section><BottomNav/></main>;
+}
