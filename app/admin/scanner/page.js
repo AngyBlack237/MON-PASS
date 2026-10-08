@@ -10,10 +10,13 @@ export default function Scanner(){
   const [msg,setMsg]=useState("");
   const [busy,setBusy]=useState(false);
   const [cameraOn,setCameraOn]=useState(false);
+  const [cameraStatus,setCameraStatus]=useState("");
+  const [starting,setStarting]=useState(false);
   const video=useRef(null);
   const stream=useRef(null);
   const timer=useRef(null);
   const scanning=useRef(false);
+  const canvas=useRef(null);
 
   function stopCamera(){
     if(timer.current){clearInterval(timer.current);timer.current=null;}
@@ -24,30 +27,69 @@ export default function Scanner(){
   }
   useEffect(()=>()=>{if(timer.current)clearInterval(timer.current);if(stream.current)stream.current.getTracks().forEach(t=>t.stop());},[]);
 
+  async function loadFallbackDecoder(){
+    if(window.jsQR)return window.jsQR;
+    await new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+      script.async=true;
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error("Impossible de charger le lecteur QR de secours."));
+      document.head.appendChild(script);
+    });
+    if(!window.jsQR)throw new Error("Le lecteur QR de secours n'est pas disponible.");
+    return window.jsQR;
+  }
+
   async function startCamera(){
-    if(!navigator.mediaDevices?.getUserMedia){setMsg("Caméra indisponible. Saisissez le jeton QR manuellement.");return;}
-    if(!("BarcodeDetector" in window)){setMsg("Lecture QR non prise en charge par ce navigateur. Saisissez le jeton ou utilisez un navigateur compatible.");return;}
+    setStarting(true);setCameraStatus("Initialisation de la caméra...");
     try{
-      const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+      if(!window.isSecureContext)throw new Error("La caméra exige une connexion HTTPS sécurisée.");
+      if(!navigator.mediaDevices?.getUserMedia)throw new Error("Caméra non disponible dans ce navigateur.");
+      let detector=null,decoder=null;
+      if("BarcodeDetector" in window){
+        try{
+          const formats=await window.BarcodeDetector.getSupportedFormats();
+          if(formats.includes("qr_code"))detector=new window.BarcodeDetector({formats:["qr_code"]});
+        }catch{}
+      }
+      if(!detector)decoder=await loadFallbackDecoder();
+      const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
       stream.current=media;
-      if(video.current){video.current.srcObject=media;await video.current.play();}
+      if(!video.current)throw new Error("Lecteur vidéo indisponible.");
+      video.current.srcObject=media;
+      await video.current.play();
       setCameraOn(true);
-      setMsg("Placez le QR dans le cadre. La validation reste manuelle.");
-      const detector=new window.BarcodeDetector({formats:["qr_code"]});
+      setCameraStatus("Caméra activée. Présentez un QR MON PASS devant l'objectif.");
       timer.current=setInterval(async()=>{
         if(scanning.current||!video.current||video.current.readyState<2)return;
         scanning.current=true;
         try{
-          const codes=await detector.detect(video.current);
-          if(codes.length){
-            const raw=(codes[0].rawValue||"").trim();
-            if(UUID.test(raw)){setToken(raw);setResult(null);setMsg("QR reconnu. Cliquez sur Valider le passage.");stopCamera();}
-            else setMsg("Le QR ne contient pas un jeton MON PASS valide.");
+          let raw="";
+          if(detector){
+            const codes=await detector.detect(video.current);
+            raw=(codes[0]?.rawValue||"").trim();
+          }else{
+            const v=video.current;
+            const cv=canvas.current||document.createElement("canvas");
+            canvas.current=cv;
+            cv.width=v.videoWidth;cv.height=v.videoHeight;
+            const ctx=cv.getContext("2d",{willReadFrequently:true});
+            ctx.drawImage(v,0,0,cv.width,cv.height);
+            const pixels=ctx.getImageData(0,0,cv.width,cv.height);
+            raw=(decoder(pixels.data,cv.width,cv.height)?.data||"").trim();
           }
-        }catch{setMsg("Lecture impossible. Vous pouvez saisir le jeton manuellement.");}
+          if(raw){
+            if(UUID.test(raw)){setToken(raw);setResult(null);setCameraStatus("QR reconnu. Confirmez le passage avec le bouton de validation.");stopCamera();}
+            else setCameraStatus("QR détecté, mais ce code n'est pas un jeton MON PASS.");
+          }
+        }catch{setCameraStatus("Lecture difficile. Rapprochez le QR ou saisissez le jeton manuellement.");}
         finally{scanning.current=false;}
       },500);
-    }catch{stopCamera();setMsg("Accès caméra refusé ou indisponible. Saisissez le jeton manuellement.");}
+    }catch(err){
+      stopCamera();
+      setCameraStatus((err?.name==="NotAllowedError"?"Autorisation caméra refusée. Vérifiez les permissions du navigateur.":err?.message)||"Impossible d'activer la caméra.");
+    }finally{setStarting(false);}
   }
 
   async function verify(e){
@@ -79,7 +121,8 @@ export default function Scanner(){
         <video ref={video} playsInline muted style={{width:"100%",maxHeight:250,display:cameraOn?"block":"none"}}/>
         {!cameraOn&&<><span>▣</span><b>Caméra QR</b><small>Lecture QR ou saisie manuelle</small></>}
       </div>
-      <button type="button" className="publish" onClick={cameraOn?stopCamera:startCamera}>{cameraOn?"Arrêter la caméra":"Activer la caméra QR"}</button>
+      <button type="button" className="publish" disabled={starting} onClick={cameraOn?()=>{stopCamera();setCameraStatus("Caméra arrêtée.");}:startCamera}>{starting?"Ouverture de la caméra...":cameraOn?"Arrêter la caméra":"Activer la caméra QR"}</button>
+      {cameraStatus&&<p className="authMsg" role="status" aria-live="polite" style={{marginTop:12}}>{cameraStatus}</p>}
       <form className="matchForm" onSubmit={verify}>
         <label>Jeton QR<input value={token} onChange={e=>{setToken(e.target.value);setResult(null);}} placeholder="Scanner ou coller le code du Pass" required/></label>
         <button className="publish" disabled={busy}>{busy?"Contrôle en cours...":"Vérifier et valider le passage"}</button>
