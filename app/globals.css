@@ -28,3 +28,10 @@
 .navCta.primary{background:#59df96;color:#07110e;font-weight:800}
 .offerPrice a{color:#59df96}
 @media(max-width:600px){.bottomNav{bottom:8px;padding:10px 8px}.bottomNav a{font-size:17px;min-width:42px}}
+
+/* Sélection panafricaine sur l'accueil */
+.countrySelector{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.countrySelector label{color:#b8e8cf;font-weight:700}
+.countrySelector select{background:#10251b;border:1px solid #3c7558;color:#f7fbf8;padding:10px 12px;border-radius:12px;font-size:15px;max-width:100%}
+.countrySelector small{flex-basis:100%;color:#9eb8a9;line-height:1.5;max-width:650px}
+@media(max-width:600px){.countrySelector{align-items:stretch;flex-direction:column}.countrySelector .pill{align-self:flex-start}}
