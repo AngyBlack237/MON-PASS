@@ -18,3 +18,13 @@
 .exploreHead{padding:55px 0 25px}.exploreHead h1{font-size:52px;margin:16px 0 8px}.exploreHead>p{color:#91a59c}.serviceTabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.serviceTabs .active{background:#59df96;color:#06100c}.offerGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.offerCard{background:#0e1b16;border:1px solid #23372e;border-radius:20px;padding:20px;display:grid;gap:10px}.offerCard small,.offerCard p,.offerCard>span{color:#91a59c}.offerCard h2{margin:0}.offerPrice{display:flex;justify-content:space-between;align-items:end;margin-top:8px}.offerPrice b{color:#59df96}.offerPrice strong{font-size:14px}.emptyCatalog{text-align:center;padding:70px 20px;color:#91a59c}.catalogMsg{margin:0 0 18px}@media(max-width:900px){.offerGrid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.offerGrid{grid-template-columns:1fr}.exploreHead h1{font-size:40px}}
 
 .offerAdminActions{display:flex;gap:8px;align-items:center;justify-content:flex-end}.offerAdminActions .publish{background:#59df96;color:#06100c;font-weight:800}
+
+/* Navigation MON PASS V1 */
+.bottomNav a{display:flex;flex-direction:column;align-items:center;gap:4px;color:#f7fbf8;text-decoration:none;font-size:20px;min-width:48px}
+.bottomNav a small{font-size:11px;color:#a7bdb0}
+.bottomNav a.scan{min-width:62px;padding:10px;border-radius:28px;color:#07110e;font-weight:800}
+.bottomNav a.scan small{color:#07110e}
+.navCta{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #365247;border-radius:14px;padding:13px 18px;color:white}
+.navCta.primary{background:#59df96;color:#07110e;font-weight:800}
+.offerPrice a{color:#59df96}
+@media(max-width:600px){.bottomNav{bottom:8px;padding:10px 8px}.bottomNav a{font-size:17px;min-width:42px}}
