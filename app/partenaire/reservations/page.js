@@ -1,0 +1,8 @@
+"use client";
+import {useEffect,useState} from "react";
+import {supabase} from "../../../lib/supabase";
+export default function Reservations(){
+ const [rows,setRows]=useState([]),[msg,setMsg]=useState("Chargement des réservations...");
+ useEffect(()=>{let active=true;(async()=>{const {data,error}=await supabase.rpc("get_my_partner_reservations");if(!active)return;setRows(data||[]);setMsg(error?"Impossible de charger les réservations : "+error.message:"")})();return()=>{active=false}},[]);
+ return <main><header><a className="brand" href="/">MON <b>PASS</b></a><a className="account" href="/partenaire">← Espace partenaire</a></header><section className="adminHead"><span className="pill">ESPACE PARTENAIRE</span><h1>Réservations de voyages</h1><p>Billets confirmés de votre agence, classés par départ.</p></section>{msg&&<p className="authMsg">{msg}</p>}<section className="partnerGrid">{rows.map(r=><article className="offerCard" key={r.pass_id}><h2>{r.offer_title}</h2><p><b>Passager :</b> {r.full_name||"Identité à compléter"}</p><p><b>Téléphone :</b> {r.phone||"À compléter"}</p><p><b>Départ :</b> {r.departure_at?new Date(r.departure_at).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short",timeZone:"Africa/Douala"}):"À préciser"}</p><p><b>Catégorie :</b> {r.category||"Non renseignée"}</p><p><b>Bus :</b> {r.bus_label||"Non attribué"} · <b>Siège :</b> {r.seat_number??"Non attribué"}</p><p><b>QR Pass :</b> {r.pass_status==="used"?"Déjà contrôlé":"À contrôler"}</p></article>)}{!msg&&rows.length===0&&<p>Aucune réservation confirmée pour le moment.</p>}</section></main>
+}
