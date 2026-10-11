@@ -1,0 +1,6 @@
+"use client";
+import {useEffect,useState} from "react";
+import {supabase} from "../../../lib/supabase";
+export default function EventBookings(){const [rows,setRows]=useState([]),[msg,setMsg]=useState("Chargement...");
+useEffect(()=>{(async()=>{const {data,error}=await supabase.rpc("get_my_partner_event_bookings");setRows(data||[]);setMsg(error?error.message:"")})()},[]);
+return <main><header><a className="brand" href="/">MON <b>PASS</b></a><a href="/partenaire" className="account">← Partenaire</a></header><section className="adminHead"><h1>Réservations événements</h1><p>Demandes reçues de vos clients. Une demande en attente n'est pas un billet payé.</p></section>{msg&&<p className="authMsg">{msg}</p>}<section className="offerGrid">{rows.map(r=><article className="offerCard" key={r.id}><h2>{r.offer_title}</h2><p><b>Client :</b> {r.full_name}</p><p><b>Téléphone :</b> {r.phone}</p><p><b>Catégorie :</b> {r.category}</p><p><b>Choix :</b> {r.mode==="reserve"?"Réserver":"Payer"}</p><p><b>Statut :</b> {r.status==="pending_payment"?"En attente de paiement":r.status}</p><small>{new Date(r.created_at).toLocaleString("fr-FR",{timeZone:"Africa/Douala"})}</small></article>)}{!msg&&!rows.length&&<p>Aucune demande de réservation pour le moment.</p>}</section></main>}
