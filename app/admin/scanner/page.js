@@ -5,7 +5,7 @@ import {supabase} from "../../../lib/supabase";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default function Scanner(){
-  const [token,setToken]=useState("");
+  const [token,setToken]=useState("");const [allowed,setAllowed]=useState(false);const [checking,setChecking]=useState(true);
   const [result,setResult]=useState(null);
   const [msg,setMsg]=useState("");
   const [busy,setBusy]=useState(false);
@@ -41,7 +41,8 @@ export default function Scanner(){
     return window.jsQR;
   }
 
-  async function startCamera(){
+  useEffect(()=>{let alive=true;supabase.rpc("can_scan_pass").then(({data,error})=>{if(alive){setAllowed(!error&&data===true);setChecking(false);}});return()=>{alive=false};},[]);
+  async function startCamera(){if(!allowed)return;
     setStarting(true);setCameraStatus("Initialisation de la caméra...");
     try{
       if(!window.isSecureContext)throw new Error("La caméra exige une connexion HTTPS sécurisée.");
@@ -94,26 +95,22 @@ export default function Scanner(){
 
   async function verify(e){
     e.preventDefault();
-    if(busy)return;
+    if(busy||!allowed)return;
     const clean=token.trim();
     if(!UUID.test(clean)){setMsg("Jeton QR invalide : un identifiant MON PASS est attendu.");return;}
     setBusy(true);setResult(null);setMsg("Vérification sécurisée...");
     try{
-      let {data,error}=await supabase.rpc("scan_offer_pass",{p_qr_token:clean});
+      let {data,error}=await supabase.rpc("preview_my_qr_pass",{p_qr_token:clean});
       if(error)throw error;
-      if(data?.result==="invalid"){
-        const legacy=await supabase.rpc("scan_ticket",{p_qr_token:clean});
-        if(legacy.error)throw legacy.error;
-        data=legacy.data;
-      }
       setResult(data);setMsg("");
     }catch(err){setMsg(err.message||"Impossible de valider ce Pass.");}
     finally{setBusy(false);}
   }
 
+  async function confirmPass(){if(!allowed||result?.result!=="valid")return;setBusy(true);try{let r=await supabase.rpc("scan_offer_pass",{p_qr_token:token.trim()});if(r.error)throw r.error;if(r.data?.result==="invalid")r=await supabase.rpc("scan_ticket",{p_qr_token:token.trim()});if(r.error)throw r.error;setResult(r.data);}catch(e){setMsg(e.message);}finally{setBusy(false);}}
   return <main>
     <header><a className="brand" href="/">MON <b>PASS</b></a><a className="account" href="/admin/matchs">Administration</a></header>
-    <section className="scannerBox">
+    <section className="scannerBox">{checking?<p>Vérification des droits...</p>:!allowed?<p className="authMsg">Scanner réservé aux partenaires approuvés et administrateurs MON PASS. <a href="/compte">Se connecter</a></p>:<>
       <span className="pill">CONTRÔLE QR</span>
       <h1>Scanner un Pass</h1>
       <p className="muted">Réservé aux administrateurs et partenaires approuvés. Le passage n'est validé qu'après confirmation.</p>
@@ -125,12 +122,12 @@ export default function Scanner(){
       {cameraStatus&&<p className="authMsg" role="status" aria-live="polite" style={{marginTop:12}}>{cameraStatus}</p>}
       <form className="matchForm" onSubmit={verify}>
         <label>Jeton QR<input value={token} onChange={e=>{setToken(e.target.value);setResult(null);}} placeholder="Scanner ou coller le code du Pass" required/></label>
-        <button className="publish" disabled={busy}>{busy?"Contrôle en cours...":"Vérifier et valider le passage"}</button>
+        <button className="publish" disabled={busy}>{busy?"Contrôle en cours...":"Consulter le billet sans le valider"}</button>
       </form>
       {msg&&<p className="authMsg" role="status">{msg}</p>}
       {result&&<div className={"scanResult "+result.result} role="status">
         <h2>{result.message}</h2>
-        {result.title&&<p>{result.title}</p>}
+        {result.title&&<p>{result.title}</p>}{result.type&&<p>Type : {result.type}</p>}{result.date&&<p>Date : {new Date(result.date).toLocaleString("fr-FR",{timeZone:"Africa/Douala"})}</p>}{result.amount_fcfa!=null&&<p>Montant : {result.amount_fcfa} FCFA</p>}{result.result==="valid"&&result.message==="Billet consulté — non validé"&&<button type="button" className="publish" disabled={busy} onClick={confirmPass}>Confirmer l’entrée et utiliser le billet</button>}
         {result.partner&&<p>Partenaire : {result.partner}</p>}
         {result.match&&<p>{result.match}</p>}
         {result.category&&<b>{result.category} · {result.stadium}</b>}
@@ -138,6 +135,6 @@ export default function Scanner(){
         {result.used_at&&<small>Passage enregistré : {new Date(result.used_at).toLocaleString("fr-FR")}</small>}
       </div>}
       <div className="bankNotice"><b>Anti-fraude</b><p>Un Pass validé devient UTILISÉ dans Supabase. Un deuxième contrôle renvoie PASS DÉJÀ UTILISÉ, même sur deux appareils.</p></div>
-    </section>
+    </>}</section>
   </main>;
 }
