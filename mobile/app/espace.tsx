@@ -1,0 +1,6 @@
+import {useEffect,useState} from "react";
+import {View,Text,Pressable,StyleSheet} from "react-native";
+import {router} from "expo-router";
+import {supabase} from "../lib/supabase";
+export default function Espace(){const[role,setRole]=useState("");const[msg,setMsg]=useState("Chargement...");useEffect(()=>{let live=true;(async()=>{const {data:{user}}=await supabase.auth.getUser();if(!live)return;if(!user){router.replace("/connexion");return;}const {data,error}=await supabase.from("profiles").select("role").eq("id",user.id).maybeSingle();if(!live)return;if(error){setMsg("Profil indisponible");return;}setRole(data?.role||"client");setMsg("");})();return()=>{live=false}},[]);return <View style={s.page}><Text style={s.title}>{role==="admin"?"Administration MON PASS":role==="partner"?"Espace partenaire":"Espace client"}</Text><Text style={s.text}>{msg||"Architecture V1 installée. Modules de billetterie et contrôle QR à intégrer après sécurisation des parcours."}</Text><Pressable onPress={async()=>{await supabase.auth.signOut();router.replace("/connexion")}}><Text style={s.link}>Déconnexion</Text></Pressable></View>}
+const s=StyleSheet.create({page:{flex:1,padding:24,justifyContent:"center",gap:24},title:{fontSize:26,color:"#e7c780"},text:{color:"#fff"},link:{color:"#9ddcc6"}});
