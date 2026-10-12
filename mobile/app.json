@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "MON PASS",
+    "slug": "mon-pass",
+    "scheme": "monpass",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#071b15"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
