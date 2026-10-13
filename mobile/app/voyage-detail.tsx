@@ -1,0 +1,21 @@
+import {useEffect,useState} from "react";
+import {ActivityIndicator,ScrollView,StyleSheet,Text,Pressable} from "react-native";
+import {router,useLocalSearchParams} from "expo-router";
+import {supabase} from "../lib/supabase";
+
+type Offer={id:string;title:string;description:string|null;city:string|null;venue:string|null;starts_at:string|null;price_fcfa:number;partners:{name:string}|null};
+export default function VoyageDetail(){
+ const {id}=useLocalSearchParams<{id?:string}>();
+ const [offer,setOffer]=useState<Offer|null>(null);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState("");
+ useEffect(()=>{let active=true;async function load(){
+  if(!id){setError("Voyage introuvable.");setLoading(false);return;}
+  const {data,error}=await supabase.from("partner_offers").select("id,title,description,city,venue,starts_at,price_fcfa,partners!inner(name,status,country_code)").eq("id",id).eq("offer_type","travel").eq("status","published").eq("partners.status","approved").eq("partners.country_code","CM").single();
+  if(active){setOffer(data as unknown as Offer|null);setError(error?"Impossible de charger ce voyage.":"");setLoading(false);}
+ }load();return()=>{active=false}},[id]);
+ return <ScrollView contentContainerStyle={s.page}><Text style={s.title}>Détails du voyage</Text>
+ {loading?<ActivityIndicator color="#e7c780"/>:error?<Text style={s.info}>{error}</Text>:offer?<><Text style={s.heading}>{offer.title}</Text><Text style={s.info}>Compagnie : {offer.partners?.name||"Partenaire"}</Text><Text style={s.info}>Ville : {offer.city||"À préciser"}</Text><Text style={s.info}>Lieu de départ : {offer.venue||"À confirmer"}</Text><Text style={s.info}>Départ : {offer.starts_at?new Date(offer.starts_at).toLocaleString("fr-FR"):"À confirmer"}</Text><Text style={s.info}>{offer.description||""}</Text><Text style={s.price}>{Number(offer.price_fcfa).toLocaleString("fr-FR")} FCFA</Text><Text style={s.notice}>La réservation et le paiement seront disponibles dans une prochaine version.</Text></>:<Text style={s.info}>Voyage introuvable.</Text>}
+ <Pressable onPress={()=>router.back()}><Text style={s.back}>Retour aux voyages</Text></Pressable></ScrollView>
+}
+const s=StyleSheet.create({page:{flexGrow:1,padding:20,gap:16,backgroundColor:"#0c211c"},title:{fontSize:27,color:"#e7c780",fontWeight:"bold"},heading:{fontSize:22,color:"#fff",fontWeight:"bold"},info:{color:"#d0ded7",fontSize:16},price:{color:"#e7c780",fontWeight:"bold",fontSize:22},notice:{color:"#d0ded7",padding:14,backgroundColor:"#15372e",borderRadius:10},back:{color:"#9ddcc6",paddingVertical:14}});
