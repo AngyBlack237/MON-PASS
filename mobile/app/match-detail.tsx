@@ -1,0 +1,11 @@
+import {useEffect,useState} from "react";
+import {ActivityIndicator,ScrollView,StyleSheet,Text,Pressable} from "react-native";
+import {router,useLocalSearchParams} from "expo-router";
+import {supabase} from "../lib/supabase";
+type Match={id:string;competition:string;home_team:string;away_team:string;match_date:string;city:string;stadium:string};
+export default function MatchDetail(){
+ const {id}=useLocalSearchParams<{id?:string}>();const [match,setMatch]=useState<Match|null>(null);const [loading,setLoading]=useState(true);const [error,setError]=useState("");
+ useEffect(()=>{let active=true;(async()=>{if(!id){setError("Match introuvable.");setLoading(false);return}const {data,error}=await supabase.from("matches").select("id,competition,home_team,away_team,match_date,city,stadium").eq("id",id).eq("status","published").single();if(active){setMatch(data as Match|null);setError(error?"Impossible de charger ce match.":"");setLoading(false)}})();return()=>{active=false}},[id]);
+ return <ScrollView contentContainerStyle={s.page}><Text style={s.title}>Détails du match</Text>{loading?<ActivityIndicator color="#e7c780"/>:error?<Text style={s.info}>{error}</Text>:match?<><Text style={s.heading}>{match.home_team} – {match.away_team}</Text><Text style={s.info}>Compétition : {match.competition}</Text><Text style={s.info}>Stade : {match.stadium}</Text><Text style={s.info}>Ville : {match.city}</Text><Text style={s.info}>Date : {new Date(match.match_date).toLocaleString("fr-FR")}</Text><Text style={s.notice}>L'achat de billets sera disponible dans une prochaine version.</Text></>:<Text style={s.info}>Match introuvable.</Text>}<Pressable onPress={()=>router.back()}><Text style={s.back}>Retour aux matchs</Text></Pressable></ScrollView>
+}
+const s=StyleSheet.create({page:{flexGrow:1,padding:20,gap:16,backgroundColor:"#0c211c"},title:{fontSize:27,color:"#e7c780",fontWeight:"bold"},heading:{fontSize:22,color:"#fff",fontWeight:"bold"},info:{color:"#d0ded7",fontSize:16},notice:{color:"#d0ded7",padding:14,backgroundColor:"#15372e",borderRadius:10},back:{color:"#9ddcc6",paddingVertical:14}});
